@@ -1,0 +1,4 @@
+lxml
+python-dateutil
+# fastapi        # optional, uncomment if building the bonus API
+# uvicorn        # optional, needed to run FastAPI
