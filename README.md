@@ -11,7 +11,7 @@ transactions, stores them in a relational database (SQLite), and exposes
 a frontend dashboard for analysis and visualization.
 
 ## Architecture
-Diagram:
+Diagram:https://drive.google.com/file/d/1NkOIE6VtCtJ3O4MkEX3U8XbU9i15ZnO0/view
 
 ## Scrum Board
 Link: https://github.com/users/ahmedosman-design/projects/1/views/1
