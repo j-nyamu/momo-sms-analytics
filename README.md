@@ -11,10 +11,10 @@ transactions, stores them in a relational database (SQLite), and exposes
 a frontend dashboard for analysis and visualization.
 
 ## Architecture
-Diagram: TBD (link to Draw.io / Miro export goes here)
+Diagram:
 
 ## Scrum Board
-Link: TBD
+Link: https://github.com/users/ahmedosman-design/projects/1/views/1
 
 ## Setup & Run
 TBD — instructions will be added as the ETL and frontend pieces are built.
