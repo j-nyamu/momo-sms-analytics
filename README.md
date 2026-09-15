@@ -1,7 +1,7 @@
 # MoMo SMS Analytics
 
 ## Team 
-- Members: Mungiiria Junior Nyamu, Ahmed Ousmane
+- Members: Junior Nyamu, Ahmed Ousmane
 
 ## Project Description
 Processes MoMo (Mobile Money) SMS data from XML, cleans and categorizes
