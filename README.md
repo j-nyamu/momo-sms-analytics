@@ -1,28 +1,78 @@
-
 # MoMo SMS Analytics
 
 ## Team
 - Team name: TBD
-- Members: Junior Mungiria
-           Ahmed Osman
+- Members: Mungiiria Junior Nyamu, Ahmed Ousmane
 
 ## Project Description
 Processes MoMo (Mobile Money) SMS data from XML, cleans and categorizes
-transactions, stores them in a relational database (SQLite), and exposes
-a frontend dashboard for analysis and visualization.
+transactions, stores them in a relational database (MySQL/MariaDB), and
+exposes a frontend dashboard for analysis and visualization.
 
 ## Architecture
-Diagram:https://drive.google.com/file/d/1NkOIE6VtCtJ3O4MkEX3U8XbU9i15ZnO0/view
+High-level system architecture diagram: `docs/architecture_diagram.png`
+(Miro link: TBD)
 
-## Scrum Board
-Link: https://github.com/users/ahmedosman-design/projects/1/views/1
-
-## Setup & Run
-TBD — instructions will be added as the ETL and frontend pieces are built.
-=======
-# momo-sms-analytics
 ## Database Design
 
 ### Entity Relationship Diagram
-link: https://drive.google.com/file/d/1Wv5lc4G-9UouVVSDHRFB7OpLou_VM13j/view?usp=sharing
+See `docs/erd_diagram.png`.
 
+The schema has five entities:
+
+- **Users** — people/entities that send or receive money (customers, merchants, agents, system accounts)
+- **Transaction_Categories** — lookup table of transaction types (Incoming Money, Payment, Bank Deposit, Transfer, Airtime Purchase, Data Bundle Purchase)
+- **Transactions** — one row per parsed MoMo SMS transaction; the core fact table
+- **Transaction_Participants** — junction table resolving the many-to-many relationship between `Transactions` and `Users` (each transaction has a sender and a receiver; each user appears across many transactions), tagged with a `role`
+- **System_Logs** — ETL processing/audit trail, including entries for SMS that failed to parse into a transaction
+
+### Design Rationale
+The schema separates raw SMS ingestion from structured transaction data to
+preserve auditability while enabling efficient querying. `Transactions` is
+the central fact table, holding numeric and temporal data needed for
+analytics (amount, fee, balance, datetime), with `raw_body` retained for
+traceability back to the source SMS.
+
+`Users` is deliberately generic rather than split into Senders/Receivers,
+since the same person can appear as both across different transactions —
+normalizing them into one table avoids duplicate records and enables
+per-user transaction history. The relationship between `Transactions` and
+`Users` is naturally many-to-many: one transaction involves two users
+(sender, receiver), and one user participates in many transactions. This
+is resolved with the `Transaction_Participants` junction table, which also
+carries the `role` attribute distinguishing sender from receiver.
+
+`Transaction_Categories` is separated out rather than using a plain string
+column, since the ETL categorization step already classifies transactions
+into a fixed set of types, and a lookup table keeps this consistent and
+query-efficient.
+
+`System_Logs` supports the ETL pipeline's error-handling path, capturing
+SMS that failed to parse alongside successfully processed transaction
+logs, without forcing every SMS to become a `Transactions` row.
+
+### SQL Setup
+Full schema (DDL + sample data) is in `database/database_setup.sql`. To
+run it locally against MySQL/MariaDB:
+
+```
+mysql -u root < database/database_setup.sql
+```
+
+This creates the `momo_sms_analytics` database, all five tables with
+foreign key/CHECK/UNIQUE constraints and indexes, and loads sample data
+(6+ records per table).
+
+### JSON Data Modeling
+`examples/json_schemas.json` contains a flat JSON example for each entity,
+one fully nested `complete_transaction_example` (a transaction with its
+sender, receiver, category, and logs embedded — the shape an API response
+like `GET /transactions/1` would return), and a `sql_to_json_mapping`
+section documenting how each table maps into the nested JSON structure.
+
+## Scrum Board
+Link: TBD
+
+## Setup & Run
+1. Run `database/database_setup.sql` against a local MySQL/MariaDB instance
+2. Frontend and ETL setup instructions: TBD (added as those pieces are built)
