@@ -10,7 +10,6 @@ exposes a frontend dashboard for analysis and visualization.
 
 ## Architecture
 High-level system architecture diagram: `docs/architecture_diagram.png`
-(Miro link: TBD)
 
 ## Database Design
 
