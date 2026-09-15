@@ -1,0 +1,228 @@
+MoMo SMS Analytics Database Design Document 
+Week 2 — Database Foundation
+1. Entity Relationship Diagram 
+The ERD above shows five entities: Users, Transaction_Categories, Transactions, Transaction_Participants, and System_Logs. Crow's-foot notation indicates cardinality between each pair of related tables. 
+Design Rationale 
+The schema separates raw SMS ingestion from structured transaction data to preserve auditability while enabling efficient querying. Transactions is the central fact table, holding numeric and temporal data needed for analytics (amount, fee, balance, datetime), with raw_body retained for traceability back to the source SMS. 
+Users is deliberately generic rather than split into Senders/Receivers, since the same person (e.g. "Jane Smith") appears as both across different transactions -- normalizing them into one table avoids duplicate records and enables per-user transaction history. The relationship between Transactions and Users is naturally many-to-many: one transaction involves two users (sender, receiver), and one user participates in many transactions. This is resolved with the Transaction_Participants junction table, which also carries the role attribute distinguishing sender from receiver -- critical since the same table row can't otherwise express directionality. 
+Transaction_Categories is separated out rather than using a plain string column, since the ETL categorization step already classifies transactions into a fixed set of types (Incoming Money, Payment, Transfer, Bank Deposit, Airtime, Data Bundle), and a lookup table keeps this consistent and query-efficient (e.g. GROUP BY category_id). 
+System_Logs supports the ETL pipeline's error-handling path (mirrors the Logs and Dead-Letter Queue component in the system architecture), capturing SMS that failed to parse, alongside successfully
+processed transaction logs, without forcing every SMS to become a Transactions row.
+2. Data Dictionary 
+Users 
+Column 
+Type 
+Constraint 
+Description
+user_id 
+INT 
+PK, AUTO_INCREMENT 
+Unique identifier for a user
+full_name 
+VARCHAR(100) 
+NOT NULL 
+Name as it appears in the SMS body
+phone_number 
+VARCHAR(20) 
+
+
+Phone number, often partially masked
+momo_code 
+VARCHAR(20) 
+
+
+Merchant/till code, merchant users only
+user_type 
+ENUM 
+NOT NULL, DEFAULT 'customer' 
+customer / merchant / agent / system
+
+
+
+Transaction_Categories 
+Column 
+Type 
+Constraint 
+Description
+category_id 
+INT 
+PK, AUTO_INCREMENT 
+Unique identifier for a category
+category_name 
+VARCHAR(50) 
+NOT NULL, UNIQUE 
+e.g. Incoming Money, Payment
+description 
+VARCHAR(255) 
+
+
+Short explanation of the category
+
+
+
+Transactions 
+Column 
+Type 
+Constraint 
+Description
+transaction_id 
+INT 
+PK, AUTO_INCREMENT 
+Unique identifier for a transaction
+category_id 
+INT 
+FK -> Transaction_Categories, NOT NULL Transaction type
+
+
+financial_transaction_id VARCHAR(30) 
+
+
+UNIQUE 
+MTN-issued Financial Transaction Id
+external_transaction_id VARCHAR(30) 
+
+
+
+
+External TxId, when present
+amount 
+DECIMAL(12,2) 
+NOT NULL, CHECK > 0 
+Transaction amount
+fee 
+DECIMAL(10,2) 
+NOT NULL, DEFAULT 0, CHECK >= 0Fee charged
+
+
+balance_after 
+DECIMAL(12,2) 
+
+
+Account balance after the transaction
+currency 
+CHAR(3) 
+NOT NULL, DEFAULT 'RWF' 
+Currency code
+transaction_datetime 
+DATETIME 
+NOT NULL 
+Parsed from the SMS body
+sms_date_received 
+DATETIME 
+
+
+When the SMS was received on-device
+status 
+ENUM 
+NOT NULL, DEFAULT 'completed' completed / failed / pending
+
+
+raw_body 
+TEXT 
+
+
+Original SMS text, retained for audit
+
+
+
+Transaction_Participants
+Column 
+Type 
+Constraint 
+Description
+participant_id 
+INT 
+PK, AUTO_INCREMENT 
+Unique identifier for the link
+transaction_id 
+INT 
+FK -> Transactions, NOT NULL 
+The transaction
+user_id 
+INT 
+FK -> Users, NOT NULL 
+The participating user
+role 
+ENUM 
+NOT NULL 
+sender / receiver
+
+
+
+System_Logs 
+Column 
+Type 
+Constraint 
+Description
+log_id 
+INT 
+PK, AUTO_INCREMENT 
+Unique identifier for a log entry
+transaction_id 
+INT 
+FK -> Transactions, nullable 
+Null when SMS never became a transaction
+raw_sms_id 
+VARCHAR(50) 
+
+
+Reference to the source SMS
+log_level 
+ENUM 
+NOT NULL, DEFAULT 'info' 
+info / warning / error
+message 
+VARCHAR(255) 
+NOT NULL 
+Human-readable log message
+created_at 
+DATETIME 
+NOT NULL, DEFAULT CURRENT_TIMESTAMP When the entry was written
+
+
+
+
+
+3. Sample Queries and CRUD Operation Results 
+The queries below were executed against a live MySQL/MariaDB instance running database_setup.sql. Output is the actual terminal result, not illustrative. 
+CREATE — Insert a new transaction 
+INSERT INTO Transactions (category_id, financial_transaction_id, amount, fee,  balance_after, currency, transaction_datetime, sms_date_received, status, raw_body) VALUES (2, 'FTX10006', 15000.00, 150.00, 53850.00, 'RWF', 
+ '2024-05-16 10:00:00', '2024-05-16 10:00:02', 'completed', 
+ 'Payment of 15000 RWF to merchant completed'); 
+Result: 
+transaction_id category_id financial_transaction_id amount fee status 7 2 FTX10006 15000.00 150.00 completed 
+READ — Join a transaction with sender, receiver, and category 
+SELECT t.transaction_id, tc.category_name, t.amount, t.currency, 
+ su.full_name AS sender, ru.full_name AS receiver, t.transaction_datetime FROM Transactions t 
+JOIN Transaction_Categories tc ON t.category_id = tc.category_id 
+JOIN Transaction_Participants sp ON t.transaction_id = sp.transaction_id AND sp.role = 'sender' JOIN Users su ON sp.user_id = su.user_id 
+JOIN Transaction_Participants rp ON t.transaction_id = rp.transaction_id AND rp.role = 'receiver' JOIN Users ru ON rp.user_id = ru.user_id 
+WHERE t.transaction_id = 1; 
+Result: 
+transaction_id category_name amount sender receiver transaction_datetime 1 Incoming Money 20000.00 Jane Smith Alex Doe 2024-05-10 14:32:00 
+UPDATE — Mark a transaction as failed 
+UPDATE Transactions SET status = 'failed' WHERE transaction_id = 5; 
+Result: 
+transaction_id status 
+5 failed 
+DELETE — Remove a log entry 
+DELETE FROM System_Logs WHERE raw_sms_id = 'SMS-0007'; 
+Result: 
+remaining_logs 
+5
+4. Data Integrity and Security Rules 
+The following constraints were tested against the live database to confirm they actually reject invalid data, not just declared in the schema. 
+CHECK constraint — rejects a negative transaction amount 
+INSERT INTO Transactions (category_id, amount, fee, currency, transaction_datetime, status) VALUES (1, -500.00, 0, 'RWF', NOW(), 'completed'); 
+ERROR 4025 (23000): CONSTRAINT `chk_transactions_amount_positive` failed 
+for `momo_sms_analytics`.`Transactions` 
+FOREIGN KEY constraint — rejects an invalid category_id 
+INSERT INTO Transactions (category_id, amount, fee, currency, transaction_datetime, status) VALUES (999, 500.00, 0, 'RWF', NOW(), 'completed'); 
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key 
+constraint fails (`momo_sms_analytics`.`Transactions`, 
+CONSTRAINT `fk_transactions_category` FOREIGN KEY (`category_id`) 
+REFERENCES `Transaction_Categories` (`category_id`)) 
+UNIQUE constraint — rejects a duplicate financial_transaction_id 
+INSERT INTO Transactions (category_id, financial_transaction_id, amount, fee,  currency, transaction_datetime, status) 
+VALUES (1, 'FTX10001', 500.00, 0, 'RWF', NOW(), 'completed'); 
+ERROR 1062 (23000): Duplicate entry 'FTX10001' for key 'financial_transaction_id'
