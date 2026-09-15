@@ -100,4 +100,4 @@ Link: https://github.com/users/j-nyamu/projects/4/views/1
 link :https://drive.google.com/file/d/1VU95WBJErN8RVD1ctHOuBQtIHCW6_KmJ/view
 
 ## AI usage document
-link :file:///C:/Users/P/Downloads/AI%20usage%20document.pdf
+link :https://docs.google.com/document/d/1fC-RqqGBOkvulud2Q75nQcKixHOGFzEt4hFNdmeRZf4/edit?tab=t.0
