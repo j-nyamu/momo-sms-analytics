@@ -1,7 +1,7 @@
 # MoMo SMS Analytics
 
 ## Team 
-- Members: Junior Nyamu, Ahmed Ousmane
+- Members: Mungiiria Junior Nyamu, Ahmed Ousmane
 
 ## Project Description
 Processes MoMo (Mobile Money) SMS data from XML, cleans and categorizes
@@ -15,7 +15,7 @@ High-level system architecture diagram: `docs/architecture_diagram.png`
 ## Database Design
 
 ### Entity Relationship Diagram
-See `docs/erd_diagram.png`.
+See `docs/ERD.png`.
 
 The schema has five entities:
 
