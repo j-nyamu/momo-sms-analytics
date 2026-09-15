@@ -51,16 +51,34 @@ SMS that failed to parse alongside successfully processed transaction
 logs, without forcing every SMS to become a `Transactions` row.
 
 ### SQL Setup
-Full schema (DDL + sample data) is in `database/database_setup.sql`. To
-run it locally against MySQL/MariaDB:
+Full schema (DDL + sample data) is in `database/database_setup.sql`. Each
+team member should install MySQL locally and run the script against their
+own instance — no shared credentials needed, the script builds the full
+database from scratch.
 
+**Windows (PowerShell):**
 ```
-mysql -u root < database/database_setup.sql
+Get-Content database\database_setup.sql | mysql -u root -p
+```
+If `mysql` isn't recognized, PowerShell doesn't have it on PATH — either
+add `C:\Program Files\MySQL\MySQL Server 8.0\bin` to your PATH environment
+variable, or call it directly:
+```
+Get-Content database\database_setup.sql | & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
 ```
 
-This creates the `momo_sms_analytics` database, all five tables with
-foreign key/CHECK/UNIQUE constraints and indexes, and loads sample data
-(6+ records per table).
+**macOS/Linux:**
+```
+mysql -u root -p < database/database_setup.sql
+```
+
+You'll be prompted for the root password you set during MySQL install.
+Verify it worked with:
+```
+mysql -u root -p -e "USE momo_sms_analytics; SHOW TABLES;"
+```
+You should see all 5 tables: `users`, `transaction_categories`,
+`transactions`, `transaction_participants`, `system_logs`.
 
 ### JSON Data Modeling
 `examples/json_schemas.json` contains a flat JSON example for each entity,
@@ -73,5 +91,5 @@ section documenting how each table maps into the nested JSON structure.
 Link: TBD
 
 ## Setup & Run
-1. Run `database/database_setup.sql` against a local MySQL/MariaDB instance
+1. Run `database/database_setup.sql` against a local MySQL/MariaDB instance (see SQL Setup above)
 2. Frontend and ETL setup instructions: TBD (added as those pieces are built)
