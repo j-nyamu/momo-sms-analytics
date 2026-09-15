@@ -87,7 +87,7 @@ like `GET /transactions/1` would return), and a `sql_to_json_mapping`
 section documenting how each table maps into the nested JSON structure.
 
 ## Scrum Board
-Link: TBD
+Link: https://github.com/users/j-nyamu/projects/4/views/1
 
 ## Setup & Run
 1. Run `database/database_setup.sql` against a local MySQL/MariaDB instance (see SQL Setup above)
