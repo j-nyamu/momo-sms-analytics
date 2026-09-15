@@ -1,0 +1,96 @@
+{
+  "_comment": "JSON data modeling for MoMo SMS Analytics. Flat examples mirror individual table rows; the complete_transaction_example shows how related tables are nested together for an API response.",
+
+  "user_example": {
+    "user_id": 3,
+    "full_name": "Alex Doe",
+    "phone_number": "+250788110003",
+    "momo_code": null,
+    "user_type": "customer"
+  },
+
+  "transaction_category_example": {
+    "category_id": 1,
+    "category_name": "Incoming Money",
+    "description": "Funds received from another person via MoMo"
+  },
+
+  "transaction_example": {
+    "transaction_id": 1,
+    "category_id": 1,
+    "financial_transaction_id": "FTX10001",
+    "external_transaction_id": null,
+    "amount": 20000.00,
+    "fee": 0.00,
+    "balance_after": 35000.00,
+    "currency": "RWF",
+    "transaction_datetime": "2024-05-10T14:32:00",
+    "sms_date_received": "2024-05-10T14:32:05",
+    "status": "completed",
+    "raw_body": "You have received 20000 RWF from Jane Smith. Financial Transaction Id: FTX10001"
+  },
+
+  "transaction_participant_example": {
+    "participant_id": 1,
+    "transaction_id": 1,
+    "user_id": 1,
+    "role": "sender"
+  },
+
+  "system_log_example": {
+    "log_id": 4,
+    "transaction_id": null,
+    "raw_sms_id": "SMS-0007",
+    "log_level": "warning",
+    "message": "SMS matched no known transaction pattern (promotional bundle offer)",
+    "created_at": "2024-05-15T00:00:00"
+  },
+
+  "complete_transaction_example": {
+    "_comment": "This is the shape an API response like GET /transactions/1 would return: the flat Transactions row with sender, receiver, and category nested inline instead of left as bare foreign keys.",
+    "transaction_id": 1,
+    "financial_transaction_id": "FTX10001",
+    "external_transaction_id": null,
+    "amount": 20000.00,
+    "fee": 0.00,
+    "balance_after": 35000.00,
+    "currency": "RWF",
+    "transaction_datetime": "2024-05-10T14:32:00",
+    "sms_date_received": "2024-05-10T14:32:05",
+    "status": "completed",
+    "category": {
+      "category_id": 1,
+      "category_name": "Incoming Money",
+      "description": "Funds received from another person via MoMo"
+    },
+    "sender": {
+      "user_id": 1,
+      "full_name": "Jane Smith",
+      "phone_number": "+250788110001",
+      "user_type": "customer"
+    },
+    "receiver": {
+      "user_id": 3,
+      "full_name": "Alex Doe",
+      "phone_number": "+250788110003",
+      "user_type": "customer"
+    },
+    "logs": [
+      {
+        "log_id": 1,
+        "log_level": "info",
+        "message": "Transaction parsed and inserted successfully",
+        "created_at": "2024-05-10T14:32:06"
+      }
+    ]
+  },
+
+  "sql_to_json_mapping": {
+    "_comment": "How relational tables map onto the nested JSON representations above.",
+    "Transactions": "Maps directly to the flat fields of transaction_example / complete_transaction_example (transaction_id through status). category_id, and the sender/receiver relationship, are foreign keys in SQL but are expanded into nested objects in JSON rather than left as raw IDs.",
+    "Transaction_Categories": "A single category row is embedded as the 'category' object inside complete_transaction_example, replacing the raw category_id foreign key.",
+    "Users": "Two Users rows (one per role) are embedded as 'sender' and 'receiver' objects. This is resolved via the Transaction_Participants junction table in SQL, but the API response flattens that junction into two named keys instead of exposing an array of {user_id, role} pairs.",
+    "Transaction_Participants": "This junction table has no direct JSON equivalent in the nested response — its two rows (sender link, receiver link) are what get resolved into the 'sender' and 'receiver' keys above. It would only appear directly in a flat participants_example if querying that table on its own.",
+    "System_Logs": "Rows are grouped by transaction_id and returned as a 'logs' array nested inside the transaction they belong to, rather than as a separate flat list."
+  }
+}
