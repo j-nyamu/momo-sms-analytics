@@ -1,7 +1,6 @@
 # MoMo SMS Analytics
 
-## Team
-- Team name: TBD
+## Team 
 - Members: Mungiiria Junior Nyamu, Ahmed Ousmane
 
 ## Project Description
