@@ -95,3 +95,9 @@ Link: https://github.com/users/j-nyamu/projects/4/views/1
 ## Setup & Run
 1. Run `database/database_setup.sql` against a local MySQL/MariaDB instance (see SQL Setup above)
 2. Frontend and ETL setup instructions: TBD (added as those pieces are built)
+
+## Database design document
+link :https://drive.google.com/file/d/1VU95WBJErN8RVD1ctHOuBQtIHCW6_KmJ/view
+
+## AI usage document
+link :file:///C:/Users/P/Downloads/AI%20usage%20document.pdf
