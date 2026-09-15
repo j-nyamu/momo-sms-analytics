@@ -3,7 +3,8 @@
 
 ## Team
 - Team name: TBD
-- Members: TBD
+- Members: Junior Mungiria
+           Ahmed Osman
 
 ## Project Description
 Processes MoMo (Mobile Money) SMS data from XML, cleans and categorizes
