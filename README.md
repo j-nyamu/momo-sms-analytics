@@ -74,4 +74,4 @@ Compares linear search (O(n)) with dictionary lookup (O(1) average) on 20 record
 
 ## Team
 
-Team name: <your team name>
+Team name: <your group 11>
